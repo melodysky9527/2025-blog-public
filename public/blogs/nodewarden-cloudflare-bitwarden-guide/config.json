@@ -1,0 +1,14 @@
+{
+  "title": "NodeWarden 部署教程：用 Cloudflare 自建 Bitwarden 兼容密码库",
+  "tags": [
+    "NodeWarden",
+    "Bitwarden",
+    "Cloudflare",
+    "密码管理",
+    "自托管"
+  ],
+  "date": "2026-11-26T18:11",
+  "summary": "参考 NodeWarden 部署教程并按当前项目资料重新整理，带你完成 Cloudflare Workers 部署、R2/KV 选择、自定义域名、JWT_SECRET、Bitwarden 客户端连接、密码迁移、TOTP、通行密钥与远程备份，说明免费额度和恢复条件。",
+  "hidden": false,
+  "category": "开源"
+}
