@@ -1,5 +1,19 @@
 [
   {
+    "slug": "agent-skills-practical-guide",
+    "title": "Agent Skills 怎么用：把重复工作写成可复用的流程",
+    "tags": [
+      "AI",
+      "Agent Skills",
+      "GitHub Copilot",
+      "智能体"
+    ],
+    "date": "2026-11-26T14:53",
+    "summary": "结合 GitHub 本月发布的指南，解释 Agent Skills 应写清哪些内容、如何分开维护项目配置与权限，以及迁移到不同客户端时该怎样验收。",
+    "hidden": false,
+    "category": "AI 前沿"
+  },
+  {
     "slug": "gpt-62-astra-sol-guide",
     "title": "GPT-6.2 Astra 与 Sol 发布：日常任务怎么选，复杂工作怎么测",
     "tags": [
