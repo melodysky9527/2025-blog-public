@@ -1,80 +1,139 @@
-想用 YYsuni 的 2025 Blog 搭建个人博客，又想把网站托管到腾讯云 EdgeOne，可以沿用“GitHub 保存内容、GitHub App 管理写入”的方案，把部署平台换成 EdgeOne。
+第一次搭博客，可以按“看图 → 操作 → 核对结果”的顺序来。这篇保留 YYsuni 的 2025 Blog 项目，把部署平台改为腾讯云 EdgeOne，并补上 **16 张配图**：从 Fork 仓库到写下第一篇文章，不要求你先在电脑上安装开发环境。
 
-本文参考[原作者的使用引导](https://www.yysuni.com/blog/readme)，按当前项目代码和 EdgeOne 官方文档重新整理，依次完成 Fork、创建 GitHub App、导入仓库、填写构建参数、绑定域名和在线写作。
+先记住整条路线：**复制仓库 → 创建写作 App → 导入 EdgeOne → 填参数 → 部署 → 绑定域名 → 在线写文章。**
 
-> 名称说明：EdgeOne Pages 已升级为 **EdgeOne Makers**。控制台和旧教程中可能出现这两个名称，本文使用“Makers（原 Pages）”。[官方产品说明](https://pages.edgeone.ai/document/product-introduction)
+> **配图怎么用**：GitHub 账号设置采用原作者教程截图，EdgeOne 采用官方文档截图，写作编辑器为本站实际演示截图。图片上的编号和外侧说明是本次补充；账号、仓库、App ID、域名和 DNS 值都要换成自己的。参数对照图已单独标为“非控制台截图”。界面名称可能随版本、语言不同而变化，以当前页面和文中说明为准。
+>
+> **产品名称**：EdgeOne Pages 已升级为 **EdgeOne Makers**。旧教程还可能写 Pages；本文走 Makers 的 Next.js 框架部署流程。[官方产品说明](https://pages.edgeone.ai/document/product-introduction)
 
-## 1. 先准备好这些东西
+## 第 1 步：把博客项目复制到自己的 GitHub
 
-你需要一个 GitHub 账号和一个可登录的腾讯云账号。建议另备一个自己管理的域名，方便博客长期访问；没有域名时，可以先用控制台提供的预览入口检查部署。
+准备一个 GitHub 账号、一个可登录的腾讯云账号。域名可以稍后再配；长期使用时建议准备一个自己管理的域名。
 
-这套流程用到两份不同的 GitHub 授权：
+打开 [YYsuni/2025-blog-public](https://github.com/YYsuni/2025-blog-public)，找到 **Fork**。它的意思是“把这个项目复制一份到我的账号下”。
 
-- **EdgeOne 的仓库授权**：让托管平台拉取代码、构建网站。
-- **你自己创建的 GitHub App**：让博客页面把文章、图片和配置写回你的仓库。
+![图 01：把项目复制到自己的 GitHub](/blogs/2025-blog-edgeone-deploy-guide/da25188e5d7a833f.webp)
 
-两者都需要完成。只把仓库导入 EdgeOne，并不等于已经配置好博客的在线写作权限。[Git 导入说明](https://pages.edgeone.ai/document/importing-a-git-repository) · [项目内容提交代码](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/src/lib/github-commit.ts)
+*图 01｜原作者截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://www.yysuni.com/blog/readme)。*
 
-## 2. Fork 博客项目
+选择自己的账号，创建副本。新手可以保留仓库名 `2025-blog-public`，避免多改一处。
 
-打开 [YYsuni/2025-blog-public](https://github.com/YYsuni/2025-blog-public)，点击 **Fork**，将项目复制到自己的 GitHub 账号下。新手可以保留公开仓库和原仓库名，减少需要修改的地方。
+**完成标志**：浏览器里的仓库地址变成 `github.com/你的账号/你的仓库`。记下所有者、仓库名和要发布的分支；后文用 `OWNER`、`REPO`、`BRANCH` 表示。分支若保留原设置通常是 `main`，仍以自己的仓库为准。[原项目引导](https://www.yysuni.com/blog/readme)
 
-记下自己仓库的三个信息：仓库所有者、仓库名、准备部署的分支。本文后续以 `OWNER` / `REPO` / `BRANCH` 表示它们；如果保留原名称和分支，后两项通常是 `2025-blog-public`、`main`，仍需在自己的仓库中确认。
+## 第 2 步：创建一个能写入仓库的 GitHub App
 
-这一步可以直接在浏览器完成，暂时不需要克隆代码到本地。[原项目说明](https://github.com/YYsuni/2025-blog-public)
+先分清两份授权：**自己的 GitHub App 负责把文章写回仓库；EdgeOne 的仓库授权负责拉代码和部署。** 两者都要做。下面先配写作 App。[项目提交逻辑](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/src/lib/github-commit.ts) · [EdgeOne 导入说明](https://pages.edgeone.ai/document/importing-a-git-repository)
 
-## 3. 创建用于在线写作的 GitHub App
+### 2.1 找到创建 App 的入口
 
-先把写作权限配置好，后面创建 EdgeOne 项目时就能一次填齐变量。
+在 GitHub 个人设置中，依次进入 **Settings → Developer settings → GitHub Apps → New GitHub App**。
 
-### 注册 App
+![图 02：进入 GitHub 的开发者设置](/blogs/2025-blog-edgeone-deploy-guide/5dbe2e3c5135ad9f.webp)
 
-在 GitHub 个人设置中进入 **Settings → Developer settings → GitHub Apps → New GitHub App**，按下面填写：
+*图 02｜原作者截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://www.yysuni.com/blog/readme)。*
 
-| 项目 | 填写方式 |
+按下面的图找到表单，再逐项填：
+
+![图 03：填写写作 App 的基本信息](/blogs/2025-blog-edgeone-deploy-guide/3de4045fc5d47a77.webp)
+
+*图 03｜原作者截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://www.yysuni.com/blog/readme)。*
+
+- **GitHub App name**：起一个未被占用的名称。
+- **Homepage URL**：填自己 Fork 后的仓库完整地址；已经有博客地址时也可以填博客地址。
+- **Webhook → Active**：取消勾选。这里只关闭你的写作 App 接收 Webhook 的功能，不要因此关闭 EdgeOne 的 Git 集成。
+- **安装范围**：自己使用时选 **Only on this account**。
+
+这些字段和最小权限原则可对照 [GitHub 官方注册文档](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)。
+
+### 2.2 给 Contents 写权限
+
+在 **Repository permissions** 中找到 **Contents**，设为 **Read and write**。其他权限不额外扩大，系统要求保留的只读权限照常保留。
+
+![图 04：只配置写文章需要的仓库权限](/blogs/2025-blog-edgeone-deploy-guide/fb60866aa7a77b90.webp)
+
+*图 04｜原作者截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://www.yysuni.com/blog/readme)。*
+
+然后创建 App。这一权限配置沿用[原作者的项目引导](https://www.yysuni.com/blog/readme)，用于项目创建文件、提交和更新分支。
+
+### 2.3 保存 App ID 和 PEM，再安装到仓库
+
+App 创建后，请完成三件事：
+
+1. 记录页面里的 **App ID**，不要拿 Client ID 或 Installation ID 代替。
+2. 生成并下载 PEM 私钥。旧界面可能是 **Private keys → Generate a private key**；新界面可能是 **Credentials → Key pairs → New key**。
+3. 进入 **Install App**，继续安装到自己的博客仓库。
+
+![图 05：创建 App 后，还要安装到仓库](/blogs/2025-blog-edgeone-deploy-guide/a246892e599c61c6.webp)
+
+*图 05｜原作者截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://www.yysuni.com/blog/readme)。*
+
+仓库范围选 **Only select repositories**，只勾选自己的博客仓库，再完成安装。
+
+![图 06：只授权自己的博客仓库](/blogs/2025-blog-edgeone-deploy-guide/06e132690185ea43.webp)
+
+*图 06｜原作者截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://www.yysuni.com/blog/readme)。*
+
+**完成标志**：你手上有自己的 App ID 和一个下载好的 `.pem` 文件，而且 App 已安装到目标仓库。只创建 App、不安装，后面仍然不能写入。
+
+**PEM 是私钥文件**，请保存在自己手中，后面只通过自己博客的“导入密钥”入口使用。不要提交到仓库、贴进文章，也不要填到任何 `NEXT_PUBLIC_` 变量里。[GitHub 私钥说明](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)
+
+## 第 3 步：让 EdgeOne 导入自己的仓库
+
+从 [EdgeOne 控制台](https://console.tencentcloud.com/edgeone/zones) 登录后，如果看到的是站点列表，请进入 **Makers（原 Pages）** 的 Git 仓库导入流程。官方当前项目入口指向 [EdgeOne Makers](https://console.tencentcloud.com/edgeone/makers)。[官方导入指南](https://pages.edgeone.ai/document/importing-a-git-repository)
+
+选择 **GitHub / 导入 Git 仓库**：
+
+![图 07：进入 Makers，选择从 GitHub 导入](/blogs/2025-blog-edgeone-deploy-guide/c0e54496123cd348.webp)
+
+*图 07｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/importing-a-git-repository)。*
+
+跟着 GitHub 授权页面，让 EdgeOne 能访问自己的 Fork，再回到 EdgeOne 选择这份仓库。
+
+![图 08：让 EdgeOne 能读取你的仓库](/blogs/2025-blog-edgeone-deploy-guide/f41f1f5ad7570ab4.webp)
+
+*图 08｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/importing-a-git-repository)。*
+
+**完成标志**：EdgeOne 里选中的仓库所有者是你自己，仓库名也与第 1 步一致。找不到仓库时，先检查 EdgeOne 的 GitHub 授权范围是否包含它。
+
+## 第 4 步：按本项目填写构建参数
+
+在创建项目时核对构建设置；创建后也可以到项目设置的构建与部署区域调整。下图用于辨认设置位置，**官方演示值不一定属于这个博客项目**。
+
+![图 09：找到构建设置，数值按本文填写](/blogs/2025-blog-edgeone-deploy-guide/a4393788d111e947.webp)
+
+*图 09｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/build-guide)。*
+
+真正要照着核对的是这一张：
+
+![图 10：本项目这 7 项，照着核对](/blogs/2025-blog-edgeone-deploy-guide/cb2518edf65f3aee.webp)
+
+*图 10｜填写对照图（非控制台截图）。本图是填写对照，不是控制台界面。 [参数依据](https://pages.edgeone.ai/document/framework-nextjs)。*
+
+为方便复制和核对，文字版也放在这里：
+
+| 项目 | 本文采用的值 |
 | --- | --- |
-| GitHub App name | 起一个未被占用的名称 |
-| Homepage URL | 填自己 Fork 后的仓库完整地址，已有博客域名也可以使用 |
-| Webhook → Active | 取消勾选，这个博客的内容写入方案不需要它接收 Webhook |
-| Repository permissions → Contents | 设为 **Read and write** |
-| 其他权限 | 不额外扩大权限；系统自动要求的只读权限保留 |
-| 安装范围 | 自己使用时选择 **Only on this account** |
-
-这里关闭的是你创建的**写作 App** 的 Webhook，EdgeOne 的 Git 集成仍需正常保留。字段含义及最小权限原则可参考 [GitHub App 注册文档](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)。博客所需的 Contents 写权限沿用原项目的配置。
-
-### 生成密钥并安装到仓库
-
-创建后记录 **App ID**。后面填的是这个值，注意区分 Client ID 和 Installation ID。
-
-接着找到密钥管理区域，生成并下载 PEM 私钥。不同界面可能显示 **Private keys → Generate a private key**，或 **Credentials → Key pairs → New key**。然后进入 **Install App**，选择 **Only select repositories**，只勾选自己的博客仓库，再完成安装。
-
-**只创建 App 还不够，必须安装到目标仓库。** PEM 文件请妥善保存在自己手中；后面通过自己博客的“导入密钥”入口使用，不要提交到 GitHub，也不要填进任何 `NEXT_PUBLIC_` 变量。[GitHub 私钥说明](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps) · [原项目引导](https://www.yysuni.com/blog/readme)
-
-## 4. 在 EdgeOne 导入自己的仓库
-
-可以从你给出的 [EdgeOne 控制台入口](https://console.tencentcloud.com/edgeone/zones) 登录。**如果当前看到的是站点列表，请进入 Makers（旧版名 Pages）产品的 Git 仓库导入流程。** 官方当前文档指向的项目控制台是 [EdgeOne Makers](https://console.tencentcloud.com/edgeone/makers)。[官方 Git 导入说明](https://pages.edgeone.ai/document/importing-a-git-repository)
-
-选择 **GitHub / 导入 Git 仓库**，按页面提示授权 EdgeOne 访问仓库，再选择自己 Fork 的那一份。仓库列表里找不到项目时，先检查 EdgeOne 的 GitHub 授权范围是否包含它。
-
-### 核对构建参数
-
-本次核对的项目使用 Next.js 16，`build` 脚本为 `next build`，并带有 `pnpm-lock.yaml`；配置里没有启用 `output: 'export'`。因此，这里走 Next.js 框架部署流程。[package.json](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/package.json) · [next.config.ts](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/next.config.ts)
-
-| 配置项 | 本文采用的设置 |
-| --- | --- |
-| 框架预设 | **Next.js** |
-| 根目录 | 仓库根目录，通常为 `./` |
-| 生产分支 | 自己准备用来发布的分支，例如 `main` |
+| 框架预设 | Next.js |
+| 根目录 | `./`，也就是仓库根目录 |
+| 生产分支 | 自己准备发布的分支，例如 `main` |
 | 安装命令 | `pnpm install`；自动识别正确时可保留平台配置 |
 | 构建命令 | `pnpm build` |
 | 输出目录 | `.next` |
-| Node.js | 建议选择平台预装的 Node.js 22，例如控制台可选的 `22.21.1` |
+| Node.js | 平台可选的 Node.js 22，例如 `22.21.1` |
 
-官方目前支持 Next.js 16，普通 Next.js 构建的输出目录是 `.next`；只有明确改成静态导出时才使用 `out`。这篇教程不需要修改成静态导出，也不使用仓库里的 Cloudflare 专用 `build:cf` 或 `deploy` 脚本。[Next.js 框架指南](https://pages.edgeone.ai/document/framework-nextjs) · [构建指南](https://pages.edgeone.ai/document/build-guide)
+本次核对的项目是 Next.js 16，`build` 脚本就是 `next build`，仓库带 `pnpm-lock.yaml`，且未启用 `output: 'export'`。官方支持该版本的普通框架构建；它的输出是 **`.next`**，不是静态导出使用的 `out`，也不需要运行 Cloudflare 专用脚本。
 
-### 填写环境变量
+依据：[项目 package.json](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/package.json) · [Next.js 框架指南](https://pages.edgeone.ai/document/framework-nextjs) · [构建指南](https://pages.edgeone.ai/document/build-guide)。
 
-在创建页面或项目设置的环境变量区域，添加以下四项。下面是格式示例，提交前要把所有值核对成自己的信息：
+## 第 5 步：添加四个环境变量，并选择区域
+
+环境变量可以理解为“告诉这个网站要管理哪一个仓库”。在创建页或项目设置中找到环境变量区域：
+
+![图 11：添加四个 GitHub 环境变量](/blogs/2025-blog-edgeone-deploy-guide/08bb3c5fb05ce93c.webp)
+
+*图 11｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/build-guide)。*
+
+**变量名按下面复制，等号右边换成自己的信息**：
 
 ```dotenv
 NEXT_PUBLIC_GITHUB_OWNER=your-github-name
@@ -83,24 +142,30 @@ NEXT_PUBLIC_GITHUB_BRANCH=main
 NEXT_PUBLIC_GITHUB_APP_ID=123456
 ```
 
-- `OWNER` 是你自己的仓库所有者，不要保留原作者的账号。
-- `REPO` 是实际仓库名，改过名字就填新名字。
-- `BRANCH` 要与计划发布的分支一致。
-- `APP_ID` 换成刚才记录的 App ID。
+- `OWNER`：自己的仓库所有者，不是原作者的账号。
+- `REPO`：自己的实际仓库名，改过名就填新名字。
+- `BRANCH`：要写入并部署的分支。
+- `APP_ID`：第 2 步记录的 App ID，示例里的 `123456` 不能照抄。
 
-变量至少应用到**生产环境**；需要预览分支也能使用同样配置时，再将它们应用到预览环境。这四个变量名来自项目的 [src/consts.ts](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/src/consts.ts)。
+至少应用到**生产环境**；需要预览分支也能使用同样配置时，再应用到预览环境。变量名来自项目 [src/consts.ts](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/src/consts.ts)。
 
-`NEXT_PUBLIC_` 变量会进入浏览器代码，不适合保存秘密。它们在构建时确定：**以后修改变量，需要重新构建部署，刷新网页不会更新旧构建里的值。** [Next.js 环境变量说明](https://nextjs.org/docs/app/guides/environment-variables) · [EdgeOne 环境管理](https://pages.edgeone.ai/document/build-guide)
+`NEXT_PUBLIC_` 的值会进入浏览器代码，不适合保存秘密；它在构建时确定，**以后修改变量要重新构建，刷新网页不会修改旧构建里的值**。[Next.js 环境变量说明](https://nextjs.org/docs/app/guides/environment-variables) · [EdgeOne 构建指南](https://pages.edgeone.ai/document/build-guide)
 
-### 选择加速区域
+接着按自己的域名情况选择加速区域：
 
-按域名情况选择：尚未完成 ICP 备案的域名，可先采用 **Global availability zone (exclude Chinese mainland)**，即全球可用区（不含中国大陆）。如果需要使用包含中国大陆节点的加速区域，先确认域名满足控制台要求；官方文档要求这类区域的自定义域名完成 ICP 备案。具体可选区域以账号当前界面为准。[域名与加速区域说明](https://pages.edgeone.ai/document/domain-overview)
+![图 12：按自己的域名条件选择加速区域](/blogs/2025-blog-edgeone-deploy-guide/6c8730b24badc07d.webp)
 
-## 5. 处理原项目的重定向，再开始部署
+*图 12｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/importing-a-git-repository)。*
 
-当前项目在 `next.config.ts` 中把 `/zh` 和 `/en` 跳转到首页。EdgeOne 官方说明目前不支持直接沿用 Next.js 内置的 `redirects` / `rewrites` 配置，建议使用 `edgeone.json`。
+尚未备案的域名，可先采用 **Global availability zone (exclude Chinese mainland)**，即全球可用区（不含中国大陆）。包含中国大陆节点的区域，其自定义域名需满足官方的 ICP 备案要求；可选项以账号当前控制台为准。[域名与加速区域说明](https://pages.edgeone.ai/document/domain-overview)
 
-如果希望这两个入口在 EdgeOne 上继续跳转，在仓库根目录新建 `edgeone.json`，加入下面的配置；已有这个文件时，只合并 `redirects`，保留其他设置：
+**完成标志**：仓库、分支、App ID 都是你自己的信息，变量已应用到将要部署的环境，区域也已核对。
+
+## 第 6 步：补上两个跳转规则，再开始部署
+
+原项目把 `/zh`、`/en` 跳转到首页。EdgeOne 官方当前说明不支持直接沿用 Next.js 内置的 `redirects` / `rewrites`，建议用 `edgeone.json`。[支持范围](https://pages.edgeone.ai/document/framework-nextjs) · [配置说明](https://pages.edgeone.ai/document/edgeone-json)
+
+如果希望保留这两个入口，在仓库根目录新建 `edgeone.json`，内容如下。已有这个文件时只合并 `redirects`，保留其他配置：
 
 ```json
 {
@@ -111,62 +176,83 @@ NEXT_PUBLIC_GITHUB_APP_ID=123456
 }
 ```
 
-不需要改动 `next.config.ts` 的其他内容。配置依据：[Next.js 支持范围](https://pages.edgeone.ai/document/framework-nextjs) · [edgeone.json 配置说明](https://pages.edgeone.ai/document/edgeone-json)。
+完成文件提交后，核对 EdgeOne 将构建的提交版本，再点击 **开始部署 / Start Deployment**。如果创建页面打开期间又修改了仓库，必要时重新部署最新提交。
 
-核对仓库、分支、变量和构建设置后，点击 **开始部署 / Start Deployment**。如果配置页打开期间又提交了文件，确认这次构建使用的是最新提交；必要时从控制台重新部署。
+![图 13：等到部署成功，再打开网站检查](/blogs/2025-blog-edgeone-deploy-guide/941c6622d7bff210.webp)
 
-等待构建与部署状态成功，再通过控制台提供的项目地址或预览入口检查首页和文章列表。构建失败时打开日志，先看最早出现的有效错误；部署时间取决于项目构建和平台状态，不用按照原 Vercel 教程里的耗时等待。[部署与重新部署说明](https://pages.edgeone.ai/document/create-deploys)
+*图 13｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/importing-a-git-repository)。*
 
-## 6. 绑定自己的域名
+**完成标志**：本次部署显示成功，并且能从控制台预览入口打开首页和文章列表。构建失败时先查看日志里最早的有效错误；不要因为原 Vercel 教程写了某个耗时，就认定超过它一定失败。[部署与重新部署说明](https://pages.edgeone.ai/document/create-deploys)
 
-进入项目的**域名管理**，添加自己控制的域名，例如 `blog.example.com`。按控制台指引完成归属验证，再到域名 DNS 服务商处添加指定的 CNAME，随后完成 HTTPS 证书配置。记录值以当前项目显示为准，别照抄其他人的 CNAME。[自定义域名指南](https://pages.edgeone.ai/document/custom-domain)
+## 第 7 步：绑定自己的域名
 
-把正式域名关联到生产环境，等待解析、验证和证书就绪，再检查 HTTPS 访问。
+进入项目的**域名管理**，添加自己控制的域名，例如 `blog.example.com`。
 
-这里有个容易误判的问题：官方当前规则下，**从中国大陆网络访问平台分配的项目域名、部署域名，需要使用系统生成的预览链接，有效期为 3 小时；过期会返回 401**。可以回到控制台项目概览重新点“预览”。因此，预览链接适合调试，长期访问建议绑定自己的域名。[平台域名访问规则](https://pages.edgeone.ai/document/domain-overview)
+![图 14：在项目的域名管理中添加域名](/blogs/2025-blog-edgeone-deploy-guide/f7875511fef30f46.webp)
 
-## 7. 导入密钥，发布第一篇文章
+*图 14｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/custom-domain)。*
 
-打开部署好的自己的博客，从“写文章”进入编辑器，也可以访问自己域名下的 `/write`。点击**导入密钥**，选择前面下载的 PEM 文件。
+然后按控制台提供的信息，到域名的 DNS 服务商处设置记录。需要先做归属验证时，按页面给出的记录类型和记录值填写；业务 CNAME 也使用当前项目给出的值。
 
-建议先写一篇简短测试文章：填写标题、唯一 slug、摘要和正文；需要图片时先在图片管理区上传，再插入正文，最后打开预览检查。确认内容后再发布。这是原项目提供的在线写作方式。[原作者使用引导](https://www.yysuni.com/blog/readme)
+![图 15：到 DNS 服务商处填写项目给出的记录](/blogs/2025-blog-edgeone-deploy-guide/13b4cf1c6524dd63.webp)
 
-点击“发布”后的过程，可以这样理解：
+*图 15｜EdgeOne 官方截图。已增加外侧步骤说明，截图里的示例账号、仓库和记录值请勿照抄。 [图片出处](https://pages.edgeone.ai/document/custom-domain)。*
 
-1. 博客通过你的 GitHub App，把内容提交到配置好的仓库分支。
-2. 在 Git 集成正常、对应环境开启自动部署的情况下，仓库变更触发 EdgeOne 构建。
-3. 新部署成功后，对应环境的网站才会提供更新后的内容。
+不要照抄截图里的 DNS 值。把正式域名关联到生产环境，完成 HTTPS 证书配置，等待解析、验证和证书就绪后再访问。[自定义域名指南](https://pages.edgeone.ai/document/custom-domain)
 
-第一步由[项目提交代码](https://github.com/YYsuni/2025-blog-public/blob/e72a6b8091e2f38848f3472cb9b9c215828168bd/src/lib/github-commit.ts)支持，后两步依据 [Git 导入与部署规则](https://pages.edgeone.ai/document/importing-a-git-repository)及[环境管理](https://pages.edgeone.ai/document/build-guide)整理。这说明“发布成功”的提示还需要配合 EdgeOne 的部署状态一起检查。
+**先没有域名怎么办？** 可以先用控制台生成的预览入口调试。官方当前规则下，从**中国大陆网络**访问平台分配的项目域名、部署域名，需要使用系统生成的预览链接；有效期 **3 小时**，过期会返回 **401**，回项目概览重新点“预览”即可。这个限制不应泛化到所有自定义域名。[平台域名访问规则](https://pages.edgeone.ai/document/domain-overview)
 
-如果 GitHub 已经出现新提交，但 EdgeOne 没有开始部署，先检查分支、自动部署开关和仓库授权，也可以手动触发一次重新部署。确认第一次提交的结果后再操作，避免重复发布。
+## 第 8 步：照着编号，写第一篇文章
 
-测试通过后，再通过站内管理入口清理不需要的原作者示例文章，修改站点名称、介绍等配置。部分首页内容仍需调整仓库中的 `src/app/(home)` 相关组件；按自己 Fork 版本的目录核对，修改后提交并等待重新部署。[原作者配置说明](https://www.yysuni.com/blog/readme)
+打开自己博客的“写文章”，或访问自己域名下的 `/write`。这张图是本次在本站实际编辑器中拍摄的演示，**没有提交示例文章**：
 
-## 8. 常见问题按这个顺序查
+![图 16：写文章：按蓝色编号找到入口](/blogs/2025-blog-edgeone-deploy-guide/aedd1dbe626ae000.webp)
 
-| 现象 | 优先检查 |
+*图 16｜本站实际编辑器演示截图（未提交）。本次在本站编辑器实际拍摄，演示文章未提交。 [写作入口](https://blog.1381886.xyz/write)。*
+
+| 图中编号 | 找到哪里 | 怎么操作 |
+| --- | --- | --- |
+| 1 | 标题 | 填文章名字，例如“我的第一篇文章” |
+| 2 | Slug | 填唯一地址名，例如 `hello-edgeone`；建议用小写英文、数字和短横线 |
+| 3 | 正文 | 写文章内容；不熟 Markdown 时先写简单段落 |
+| 4 | 摘要 | 用一两句话说明文章讲什么；标签和分类也在右侧填写 |
+| 5 | 图片管理的“＋” | 先添加图片，再拖入正文；建议先压缩图片 |
+| 6 | 预览 | 检查标题、正文、图片和代码是否正常 |
+| 7 | 导入密钥 | 选择第 2 步下载的 PEM；认证后，新文章按钮变成“发布” |
+
+已有文章的编辑页面在认证后会显示“更新”。使用的是 **GitHub App 下载的 PEM 文件**，不是腾讯云 API 密钥。图片与写作流程可参考[原作者引导](https://www.yysuni.com/blog/readme)；按钮状态也与[本站采用的编辑器代码](https://github.com/melodysky9527/2025-blog-public/blob/main/src/app/write/components/actions.tsx)一致。
+
+先写一篇短测试文章，预览无误后再发布。之后按这个顺序检查：
+
+1. **仓库有新提交**：文章已写回你配置的仓库分支。
+2. **EdgeOne 新部署成功**：Git 集成正常，且相应环境开启自动部署时，符合条件的分支提交会触发构建。
+3. **访客页面显示新内容**：用无登录窗口打开文章地址，再检查列表和首页。
+
+“发布成功”的提示和“网站已经更新”是两个检查点。仓库已有新提交但网站没变时，先检查部署分支、Auto Deploy 开关和构建记录，必要时手动重新部署；确认结果后再操作，避免重复提交。[Git 部署规则](https://pages.edgeone.ai/document/importing-a-git-repository) · [环境管理](https://pages.edgeone.ai/document/build-guide)
+
+测试通过后，再清理不需要的原作者示例文章，修改站点名称、介绍等配置。部分首页内容仍需改 `src/app/(home)` 相关组件，按自己的 Fork 版本核对。[原作者配置说明](https://www.yysuni.com/blog/readme)
+
+## 卡住时，先对照这一张表
+
+| 现象 | 先检查什么 |
 | --- | --- |
-| 导入仓库时找不到项目 | EdgeOne 的 GitHub 授权范围是否包含自己的 Fork |
-| 依赖安装失败 | 日志中的 Node、pnpm 版本及锁文件兼容性；不要先删锁文件或盲目升级依赖 |
-| 提示找不到输出目录 | 是否误填 `out`；本文的普通 Next.js 构建输出应为 `.next` |
-| 导入 PEM 后写入失败，出现 401/403 | App ID、密钥是否配套，App 是否安装到目标仓库，Contents 是否可写，分支规则是否允许此次写入 |
-| 页面仍显示错误的仓库配置 | 四个变量是否正确、是否应用到当前环境、修改后是否重新构建 |
-| GitHub 有文章，网站却没变化 | EdgeOne 是否构建了对应提交，生产分支和域名环境是否一致，部署是否成功；之后再检查缓存 |
-| 平台预览地址返回 401 | 若从中国大陆网络访问，先重新生成预览链接，再按日志排查其他原因 |
-| 首页能开，某篇文章打不开 | 直接访问并刷新该文章地址，核对对应部署是否包含正文文件；用访客窗口复查 |
+| EdgeOne 找不到仓库 | EdgeOne 的 GitHub 授权是否包含自己的 Fork |
+| 提示找不到输出目录 | 本文普通 Next.js 构建应填 `.next`，是否误填 `out` |
+| 导入 PEM 后写入失败 | App ID 和密钥是否配套，App 是否已安装，Contents 是否可写，分支规则是否允许写入 |
+| 网站仍使用错误仓库信息 | 四项变量是否正确，是否应用到当前环境，修改后是否重新构建 |
+| GitHub 已更新，网站没变化 | 是否部署了对应提交、构建是否成功、域名环境是否正确；之后再排查缓存 |
+| 平台预览链接返回 401 | 从中国大陆网络访问时，先重新生成有效预览链接，再排查其他原因 |
 
-上表是按配置依赖关系整理的排查建议，不代表每个状态码只有一种原因。尤其是写作 App、EdgeOne 仓库集成和网站访客访问，分别发生在不同环节，排查时先确认出错的位置。
+这是排查建议，不代表每种现象只有一种原因。先确定出错的是“App 写仓库”“EdgeOne 构建”还是“访客访问”，再检查对应环节。
 
 ## 来源与时效
 
-本文为资料核验版部署教程，核对日为 **2026 年 11 月 27 日（Asia/Shanghai）**。项目代码核对到提交 `e72a6b8`；未在读者的腾讯云账号中创建项目或完成线上部署，不作“亲测成功”承诺。
+文字与配图资料核对日为 **2026 年 11 月 27 日（Asia/Shanghai）**。上游框架与配置核对到提交 `e72a6b8`；配图没有把示例账号、域名和旧界面当成读者实际设置。
 
-- [YYsuni：2025 Blog 的使用引导](https://www.yysuni.com/blog/readme)：原项目流程与在线写作说明，本文据此重新组织 EdgeOne 版本，未沿用 Vercel 截图。
-- [2025-blog-public 项目及本次代码快照](https://github.com/YYsuni/2025-blog-public/tree/e72a6b8091e2f38848f3472cb9b9c215828168bd)：框架、脚本、配置变量和提交逻辑。
-- [EdgeOne 产品介绍](https://pages.edgeone.ai/document/product-introduction)、[Git 仓库导入](https://pages.edgeone.ai/document/importing-a-git-repository)：产品名称与导入流程。
-- [Next.js 框架指南](https://pages.edgeone.ai/document/framework-nextjs)、[构建指南](https://pages.edgeone.ai/document/build-guide)、[edgeone.json](https://pages.edgeone.ai/document/edgeone-json)：构建、环境变量与重定向配置。
-- [部署触发](https://pages.edgeone.ai/document/create-deploys)、[域名概览](https://pages.edgeone.ai/document/domain-overview)、[自定义域名](https://pages.edgeone.ai/document/custom-domain)：部署、预览域名和域名接入条件。
-- [GitHub App 注册](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)、[私钥管理](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)、[Next.js 环境变量](https://nextjs.org/docs/app/guides/environment-variables)：权限与变量使用说明。
+- 图 01—06 来自 [YYsuni 原项目使用引导](https://www.yysuni.com/blog/readme)，增加了本次步骤说明；不使用其中的 Vercel 部署截图。
+- 图 07—09、11—15 来自 EdgeOne 官方的 [Git 仓库导入](https://pages.edgeone.ai/document/importing-a-git-repository)、[构建指南](https://pages.edgeone.ai/document/build-guide)和[自定义域名](https://pages.edgeone.ai/document/custom-domain)页面，已在各图标注出处。
+- 图 10 为按[项目配置](https://github.com/YYsuni/2025-blog-public/tree/e72a6b8091e2f38848f3472cb9b9c215828168bd)和 [Next.js 框架指南](https://pages.edgeone.ai/document/framework-nextjs)整理的参数对照图，明确不是控制台截图。
+- 图 16 为本站实际编辑器演示截图，蓝色编号按真实控件位置添加，示例文章未提交。
+- 其他依据：[GitHub App 注册](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)、[私钥管理](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)、[Next.js 环境变量](https://nextjs.org/docs/app/guides/environment-variables)、[EdgeOne 域名规则](https://pages.edgeone.ai/document/domain-overview)。
 
-以上资料均于核对日访问。控制台菜单、版本和域名规则可能调整；账号内可用配置、资源用量与计费，以实际使用时的官方控制台为准。
+本教程不是在读者账号内创建云项目的实测记录。界面、版本、区域和域名规则可能调整；可用配置、资源用量与计费以实际使用时的官方控制台为准。
