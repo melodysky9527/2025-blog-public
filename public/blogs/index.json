@@ -1,5 +1,20 @@
 [
   {
+    "slug": "rin-cloudflare-deploy-guide",
+    "title": "Rin 部署教程：用 Cloudflare 搭建自己的博客（新手版）",
+    "tags": [
+      "Rin",
+      "Cloudflare",
+      "GitHub",
+      "部署教程",
+      "开源"
+    ],
+    "date": "2026-11-27T09:24",
+    "summary": "依据 Rin 官方部署指南，手把手完成 Fork 仓库、配置 Cloudflare 与 GitHub Secrets、运行 Build 和 Deploy 工作流，并用实际部署地址登录发布文章。",
+    "hidden": false,
+    "category": "AI 前沿"
+  },
+  {
     "slug": "nodewarden-cloudflare-bitwarden-guide",
     "title": "NodeWarden 部署教程：用 Cloudflare 自建 Bitwarden 兼容密码库",
     "tags": [
