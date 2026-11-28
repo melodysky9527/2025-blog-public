@@ -1,0 +1,12 @@
+{
+  "title": "从零部署 CloudFlare ImgBed：Cloudflare Pages 图文教程",
+  "tags": [
+    "Cloudflare",
+    "图床",
+    "部署教程"
+  ],
+  "date": "2026-11-28T16:48",
+  "summary": "从 Fork 项目开始，按 11 个步骤完成 Cloudflare Pages、KV 和 R2 配置，设置管理员账号并启用上传渠道，最后用小图片验证上传与访问。",
+  "hidden": false,
+  "category": ""
+}
